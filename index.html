@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bedroom Beat Lab 2</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial;background:#0d1018;color:#f5f7ff}
+header{padding:20px 26px;background:#171b27;border-bottom:1px solid #30384d;display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:27px}.tag,p,.muted{color:#aeb8cf}.wrap{max-width:1150px;margin:auto;padding:22px;display:grid;gap:18px}
+.card{background:#171b27;border:1px solid #30384d;border-radius:18px;padding:20px;box-shadow:0 10px 30px #0004}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}button,input,select{font:inherit}
+button{border:0;border-radius:10px;padding:10px 14px;background:#30384d;color:#fff;cursor:pointer}button:hover{filter:brightness(1.15)}
+.primary{background:#7657ff}.danger{background:#b94559}.active{outline:2px solid white}
+input[type=text]{background:#0d1018;border:1px solid #3a4257;color:white;padding:10px;border-radius:9px}
+input[type=range]{accent-color:#7657ff}
+#pads{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.pad{min-height:72px;font-weight:800}.pad small{display:block;color:#aeb8cf;margin-top:4px;font-weight:400}
+#grid{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;margin-top:14px}.step{height:31px;padding:0;border-radius:5px}.step.on{background:#7657ff}
+.rowlabel{margin-top:10px;color:#b8c2d9;font-size:12px}.line{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:8px}
+.progress{height:5px;background:#30384d;border-radius:8px;overflow:hidden;margin-top:9px}.progress span{display:block;width:0;height:100%;background:white}
+.keys{display:flex;gap:3px;overflow:auto;padding:8px 0}.key{min-width:48px;height:135px;background:#f2f3f7;color:#171b27;border-radius:0 0 7px 7px;border:1px solid #bbb;position:relative}.key.black{height:86px;background:#171717;color:white;min-width:34px;margin:0 -17px;z-index:2}.key span{position:absolute;bottom:7px;left:0;right:0;font-size:11px}
+#tracks{display:grid;gap:8px}.track{display:grid;grid-template-columns:120px 1fr 90px;gap:8px;align-items:center}.trackbar{height:34px;background:#252c3e;border-radius:8px;display:flex;align-items:center;padding:5px 9px;color:#aeb8cf}
+.idea{font-size:18px;min-height:70px;line-height:1.5}
+audio{width:100%;margin-top:12px}
+.badge{padding:4px 8px;border-radius:999px;background:#252c3e;color:#c7d0e5;font-size:12px}
+footer{text-align:center;color:#707b96;font-size:12px;padding:2px 0 18px}
+@media(max-width:650px){#pads{grid-template-columns:repeat(2,1fr)}.track{grid-template-columns:85px 1fr 70px}.key{min-width:42px}}
+</style>
+</head>
+<body>
+<header>
+ <div><h1>🎧 Bedroom Beat Lab</h1><div class="tag">Make beats • play melodies • record ideas • build songs</div></div>
+ <span class="badge">v2</span>
+</header>
+<div class="wrap">
+
+<section class="card">
+ <div class="row">
+  <input id="songName" type="text" value="My New Song">
+  <button class="primary" onclick="saveProject()">💾 Save</button>
+  <button onclick="loadProject()">📂 Load</button>
+  <label class="muted">Tempo <input id="tempo" type="range" min="70" max="160" value="110" oninput="tempoValue.textContent=this.value"></label>
+  <b><span id="tempoValue">110</span> BPM</b>
+ </div>
+</section>
+
+<section class="card">
+ <h2>🥁 Beat Maker</h2>
+ <div id="pads">
+  <button class="pad" data-sound="kick">KICK<small>low thump</small></button>
+  <button class="pad" data-sound="snare">SNARE<small>sharp hit</small></button>
+  <button class="pad" data-sound="hat">HI-HAT<small>tick</small></button>
+  <button class="pad" data-sound="clap">CLAP<small>hand clap</small></button>
+ </div>
+ <div class="rowlabel">Click the squares to turn steps on/off.</div>
+ <div id="grid"></div>
+ <div class="row" style="margin-top:14px"><button id="play" class="primary">▶ Play Beat</button><button id="stop">⏹ Stop</button><button onclick="clearBeat()">🧹 Clear</button></div>
+ <div class="progress"><span id="progress"></span></div>
+</section>
+
+<section class="card">
+ <h2>🎹 Melody Keyboard</h2>
+ <p>Click the keys to play notes. This uses your computer's built-in synth sound—no extra files needed.</p>
+ <div class="keys" id="keys"></div>
+ <div class="row"><label>Octave <button onclick="changeOctave(-1)">−</button> <b id="octave">4</b> <button onclick="changeOctave(1)">+</button></label></div>
+</section>
+
+<section class="card">
+ <h2>🎙️ Record an Audio Clip</h2>
+ <p>Record a vocal idea, beatbox, sound effect, or melody idea. Your browser will ask for microphone permission.</p>
+ <div class="row"><button id="record" class="danger">🔴 Start Recording</button><button id="clearRecording">Clear</button><span id="recordStatus" class="muted"></span></div>
+ <audio id="audio" controls></audio>
+</section>
+
+<section class="card">
+ <h2>🧩 Make the Beat Longer</h2>
+ <p>Instead of only 16 steps, build a longer loop by choosing how many bars you want. The sequencer below can now run for 1, 2, 4, or 8 bars.</p>
+ <div class="row">
+  <button onclick="setBars(1)">1 Bar</button>
+  <button onclick="setBars(2)">2 Bars</button>
+  <button class="primary" onclick="setBars(4)">4 Bars</button>
+  <button onclick="setBars(8)">8 Bars</button>
+  <span class="badge" id="barInfo">4 bars • 64 steps</span>
+ </div>
+ <div id="longGrid"></div>
+ <div class="row" style="margin-top:14px">
+  <button id="longPlay" class="primary">▶ Play Long Beat</button>
+  <button id="longStop">⏹ Stop</button>
+  <button onclick="clearLongBeat()">🧹 Clear Long Beat</button>
+ </div>
+ <div class="progress"><span id="longProgress"></span></div>
+</section>
+
+<section class="card">
+ <h2>⬇️ Export Your Song</h2>
+ <p>Download the beat as a WAV audio file. The export uses the current drum pattern, tempo, and selected number of bars.</p>
+ <div class="row">
+  <button class="primary" onclick="exportBeat()">🎵 Download Beat (.wav)</button>
+  <span id="exportStatus" class="muted"></span>
+ </div>
+</section>
+
+<section class="card">
+ <h2>🎚️ Song Tracks</h2>
+ <p>Keep track of the parts you want to build. Recording and beat playback are separate in this first prototype; a future version can mix them into one export.</p>
+ <div id="tracks"></div>
+</section>
+
+<section class="card">
+ <h2>💡 Song Idea Machine</h2>
+ <div id="ideas" class="idea">Press the button when you're stuck.</div>
+ <div class="row"><button class="primary" onclick="newIdea()">✨ Give Me an Idea</button><button onclick="newChallenge()">🎲 Music Challenge</button></div>
+</section>
+
+<section class="card">
+ <h2>🎼 Quick Song Builder</h2>
+ <div class="row">
+  <button onclick="makeSection('Intro')">Intro</button><button onclick="makeSection('Verse')">Verse</button>
+  <button onclick="makeSection('Chorus')">Chorus</button><button onclick="makeSection('Bridge')">Bridge</button><button onclick="makeSection('Outro')">Outro</button>
+  <button onclick="undoSection()">↩ Undo</button>
+ </div>
+ <p id="sections">Your song: —</p>
+</section>
+<footer>Bedroom Beat Lab — original music playground.</footer>
+</div>
+
+<script>
+let audioCtx,master,playing=false,timer=null,currentStep=0,oct=4,recorder,chunks=[];
+const sounds={kick:()=>tone(90,.14,"sine",.8),snare:()=>noise(.12,.35),hat:()=>noise(.045,.16),clap:()=>noise(.09,.25)};
+const pattern={kick:[0,4,8,12],snare:[4,12],hat:[2,6,10,14],clap:[]};
+function setupAudio(){if(!audioCtx){audioCtx=new AudioContext();master=audioCtx.createGain();master.gain.value=.25;master.connect(audioCtx.destination)} if(audioCtx.state==="suspended")audioCtx.resume()}
+function tone(freq,dur,type="sine",vol=.4){setupAudio();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.connect(g);g.connect(master);o.start();o.stop(audioCtx.currentTime+dur)}
+function noise(dur,vol){setupAudio();let b=audioCtx.createBuffer(1,audioCtx.sampleRate*dur,audioCtx.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;let s=audioCtx.createBufferSource(),g=audioCtx.createGain();s.buffer=b;g.gain.value=vol;g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);s.connect(g);g.connect(master);s.start()}
+document.querySelectorAll(".pad").forEach(b=>b.onclick=()=>sounds[b.dataset.sound]());
+
+const grid=document.getElementById("grid");
+["kick","snare","hat","clap"].forEach(sound=>{for(let i=0;i<16;i++){let b=document.createElement("button");b.className="step";b.dataset.sound=sound;b.dataset.step=i;if(pattern[sound].includes(i))b.classList.add("on");b.onclick=()=>{b.classList.toggle("on");updatePattern(sound,i,b.classList.contains("on"))};grid.appendChild(b)}});
+function updatePattern(s,i,on){pattern[s]=pattern[s].filter(x=>x!==i);if(on)pattern[s].push(i)}
+function tick(){["kick","snare","hat","clap"].forEach(s=>{if(pattern[s].includes(currentStep))sounds[s]()});document.querySelectorAll(".step").forEach(x=>x.classList.remove("active"));document.querySelectorAll('.step[data-step="'+currentStep+'"]').forEach(x=>x.classList.add("active"));progress.style.width=((currentStep+1)/16*100)+"%";currentStep=(currentStep+1)%16}
+play.onclick=()=>{if(playing)return;playing=true;setupAudio();let ms=60000/Number(tempo.value)/4;tick();timer=setInterval(tick,ms);play.textContent="⏸ Playing..."}
+stop.onclick=stopBeat;
+function stopBeat(){playing=false;clearInterval(timer);timer=null;currentStep=0;document.querySelectorAll(".step").forEach(x=>x.classList.remove("active"));progress.style.width="0%";play.textContent="▶ Play Beat"}
+function clearBeat(){Object.keys(pattern).forEach(s=>pattern[s]=[]);document.querySelectorAll(".step").forEach(x=>x.classList.remove("on"));stopBeat()}
+
+const notes=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const white=["C","D","E","F","G","A","B"];
+const keyWrap=document.getElementById("keys");
+function buildKeys(){keyWrap.innerHTML="";for(let i=0;i<white.length;i++){let n=white[i],b=document.createElement("button");b.className="key";b.innerHTML=n+"<span>"+n+oct+"</span>";b.onclick=()=>playNote(n,oct);keyWrap.appendChild(b);}}
+function playNote(n,o){let idx=notes.indexOf(n);tone(261.63*Math.pow(2,(idx+(o-4)*12)/12),.65,"triangle",.35)}
+function changeOctave(d){oct=Math.max(2,Math.min(6,oct+d));document.getElementById("octave").textContent=oct;buildKeys()} buildKeys();
+
+record.onclick=async()=>{try{if(recorder?.state==="recording"){recorder.stop();return}let stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];recorder=new MediaRecorder(stream);recorder.ondataavailable=e=>chunks.push(e.data);recorder.onstop=()=>{let blob=new Blob(chunks,{type:"audio/webm"});audio.src=URL.createObjectURL(blob);stream.getTracks().forEach(t=>t.stop());recordStatus.textContent="Recording ready!";record.textContent="🔴 Start Recording"};recorder.start();record.textContent="⏹ Stop Recording";recordStatus.textContent="Recording..."}catch(e){recordStatus.textContent="Microphone permission unavailable."}}
+clearRecording.onclick=()=>{audio.removeAttribute("src");recordStatus.textContent="";chunks=[]};
+
+const ideas=[
+"Build a funky groove where the bass answers the drum pattern.",
+"Write a chorus about stepping onto a stage and feeling confident.",
+"Start with only one instrument, then add one new layer every 4 bars.",
+"Record a rhythm with your voice and make the drums copy it.",
+"Make an upbeat dance track around 110 BPM.",
+"Create a call-and-response melody: short phrase, musical answer.",
+"Make a mysterious intro that turns into a bright, energetic chorus.",
+"Hum a melody first, then build a beat underneath it.",
+"Create an 8-count section that would be fun to choreograph.",
+"Give your song a surprising stop: everything pauses for one beat."
+];
+const challenges=[
+"Make a beat using only kick, clap, and hi-hat.",
+"Use exactly four notes for your melody.",
+"Make an intro that lasts 8 beats.",
+"Record a 10-second vocal idea without planning it first.",
+"Change the tempo and see which groove feels best.",
+"Make the snare pattern different from your first idea.",
+"Build Intro → Verse → Chorus without deleting anything.",
+"Create a beat you could dance to, then add one unexpected sound."
+];
+function newIdea(){ideasEl.textContent=ideas[Math.floor(Math.random()*ideas.length)]}
+function newChallenge(){ideasEl.textContent="🎲 Challenge: "+challenges[Math.floor(Math.random()*challenges.length)]}
+const ideasEl=document.getElementById("ideas");
+let sections=[];
+function makeSection(s){sections.push(s);renderSections()}
+function undoSection(){sections.pop();renderSections()}
+function renderSections(){document.getElementById("sections").textContent="Your song: "+(sections.join(" → ")||"—")}
+
+const trackNames=["🥁 Drums","🎹 Melody","🎙️ Vocals","🎸 Bass","✨ Extra"];
+const trackWrap=document.getElementById("tracks");
+trackNames.forEach((n,i)=>{let d=document.createElement("div");d.className="track";d.innerHTML='<b>'+n+'</b><div class="trackbar" id="track'+i+'">'+(i===0?"Beat pattern ready":i===2?"Record a clip above":"Add ideas here")+'</div><button onclick="renameTrack('+i+')">Rename</button>';trackWrap.appendChild(d)});
+function renameTrack(i){let old=trackWrap.children[i].querySelector("b").textContent;let n=prompt("Rename this track:",old);if(n)trackWrap.children[i].querySelector("b").textContent=n}
+
+
+let bars=4, longPattern={kick:[],snare:[],hat:[],clap:[]}, longPlaying=false, longTimer=null, longStep=0;
+const longGrid=document.getElementById("longGrid");
+
+function setBars(n){
+ bars=n;
+ ["kick","snare","hat","clap"].forEach(s=>longPattern[s]=[]);
+ buildLongGrid();
+ barInfo.textContent=n+" bar"+(n>1?"s":"")+" • "+(n*16)+" steps";
+}
+function buildLongGrid(){
+ longGrid.innerHTML="";
+ longGrid.style.display="grid";
+ longGrid.style.gridTemplateColumns="repeat(16,1fr)";
+ longGrid.style.gap="4px";
+ ["kick","snare","hat","clap"].forEach(sound=>{
+  for(let i=0;i<bars*16;i++){
+   let b=document.createElement("button");b.className="step";b.dataset.sound=sound;b.dataset.longstep=i;
+   b.onclick=()=>{b.classList.toggle("on");longPattern[sound]=longPattern[sound].filter(x=>x!==i);if(b.classList.contains("on"))longPattern[sound].push(i)};
+   longGrid.appendChild(b);
+  }
+ });
+}
+function longTick(){
+ ["kick","snare","hat","clap"].forEach(s=>{if(longPattern[s].includes(longStep))sounds[s]()});
+ document.querySelectorAll(".step").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll('.step[data-longstep="'+longStep+'"]').forEach(x=>x.classList.add("active"));
+ longProgress.style.width=((longStep+1)/(bars*16)*100)+"%";
+ longStep=(longStep+1)%(bars*16);
+}
+longPlay.onclick=()=>{
+ if(longPlaying)return;
+ longPlaying=true;setupAudio();
+ let ms=60000/Number(tempo.value)/4;
+ longTick();longTimer=setInterval(longTick,ms);longPlay.textContent="⏸ Playing...";
+}
+longStop.onclick=stopLong;
+function stopLong(){
+ longPlaying=false;clearInterval(longTimer);longTimer=null;longStep=0;
+ document.querySelectorAll(".step").forEach(x=>x.classList.remove("active"));
+ longProgress.style.width="0%";longPlay.textContent="▶ Play Long Beat";
+}
+function clearLongBeat(){
+ ["kick","snare","hat","clap"].forEach(s=>longPattern[s]=[]);
+ document.querySelectorAll("[data-longstep]").forEach(x=>x.classList.remove("on"));
+ stopLong();
+}
+buildLongGrid();
+
+function encodeWav(samples,sampleRate){
+ const buffer=new ArrayBuffer(44+samples.length*2),view=new DataView(buffer);
+ function str(o,s){for(let i=0;i<s.length;i++)view.setUint8(o+i,s.charCodeAt(i))}
+ str(0,"RIFF");view.setUint32(4,36+samples.length*2,true);str(8,"WAVE");str(12,"fmt ");
+ view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);
+ view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*2,true);
+ view.setUint16(32,2,true);view.setUint16(34,16,true);str(36,"data");view.setUint32(40,samples.length*2,true);
+ for(let i=0;i<samples.length;i++){let x=Math.max(-1,Math.min(1,samples[i]));view.setInt16(44+i*2,x<0?x*32768:x*32767,true)}
+ return new Blob([view],{type:"audio/wav"});
+}
+function addRenderedTone(out,start,dur,freq,vol,type="sine",sr=44100){
+ let end=Math.min(out.length,start+Math.floor(dur*sr));
+ for(let i=start;i<end;i++){let t=(i-start)/sr,env=Math.max(0,1-t/dur);let v=type==="sine"?Math.sin(2*Math.PI*freq*t):Math.sin(2*Math.PI*freq*t)*.5;out[i]+=v*vol*env}
+}
+function addRenderedNoise(out,start,dur,vol,sr=44100){
+ let end=Math.min(out.length,start+Math.floor(dur*sr));
+ for(let i=start;i<end;i++){let t=(i-start)/sr,env=Math.max(0,1-t/dur);out[i]+=(Math.random()*2-1)*vol*env}
+}
+function exportBeat(){
+ const sr=44100, stepSec=60/Number(tempo.value)/4, total=bars*16*stepSec+0.5;
+ const out=new Float32Array(Math.ceil(total*sr));
+ for(let step=0;step<bars*16;step++){
+  let start=Math.floor(step*stepSec*sr);
+  if(longPattern.kick.includes(step))addRenderedTone(out,start,.16,90,.65,"sine",sr);
+  if(longPattern.snare.includes(step))addRenderedNoise(out,start,.12,.28,sr);
+  if(longPattern.hat.includes(step))addRenderedNoise(out,start,.045,.13,sr);
+  if(longPattern.clap.includes(step))addRenderedNoise(out,start,.09,.22,sr);
+ }
+ let max=0;for(let x of out)max=Math.max(max,Math.abs(x));if(max>.95)for(let i=0;i<out.length;i++)out[i]*=.95/max;
+ let blob=encodeWav(out,sr),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=(songName.value||"my-song").replace(/[^a-z0-9-_]+/gi,"-")+".wav";a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);exportStatus.textContent="Downloaded!";
+}
+
+function saveProject(){localStorage.setItem("bedroomBeatLab2",JSON.stringify({name:songName.value,tempo:tempo.value,pattern,sections,oct,bars,longPattern}));alert("Project saved on this computer!")}
+function loadProject(){let d=JSON.parse(localStorage.getItem("bedroomBeatLab2")||"null");if(!d){alert("No saved project yet.");return}songName.value=d.name||"My New Song";tempo.value=d.tempo||110;tempoValue.textContent=tempo.value;Object.keys(pattern).forEach(s=>pattern[s]=d.pattern?.[s]||[]);sections=d.sections||[];oct=d.oct||4;bars=d.bars||4;longPattern=d.longPattern||{kick:[],snare:[],hat:[],clap:[]};document.getElementById("octave").textContent=oct;renderSections();buildKeys();buildLongGrid();barInfo.textContent=bars+" bar"+(bars>1?"s":"")+" • "+(bars*16)+" steps";document.querySelectorAll(".step").forEach(x=>x.classList.toggle("on",pattern[x.dataset.sound].includes(Number(x.dataset.step))))}
+</script>
+</body>
+</html>
